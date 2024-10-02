@@ -36,7 +36,6 @@ regd_users.post("/login", (req,res) => {
         req.session.authorization = {
             accessToken, username
         };
-        console.log(`login: ${JSON.stringify(req.session)}, ${req.session.authorization.username}`)
         return res.status(200).send("User successfully logged in");
     } else {
         return res.status(208).json({ message: "Invalid Login. Che ck username and password." });
@@ -45,33 +44,42 @@ regd_users.post("/login", (req,res) => {
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-    console.log(`put review: ${JSON.stringify(req.session)}`)
-    const isbn = req.params.isbn
-    let filtered_books = books.filter((book) => book.isbn === isbn)
+    const isbn = req.params.isbn;
+    let book = books[isbn];
 
-    if (filtered_books.length > 0) {
+    if (book) {
         const username = req.session.authorization['username'];
-        let filtered_book = filtered_books[0];
-        let reviews = filtered_book.reviews;
-        let updated_review_of_user = {
-            "username": username,
-            "review": req.body.review
-        }
 
-        let updated_reviews = reviews.filter((review) => review.username != username)
-        updated_reviews.push(updated_review_of_user)
-        filtered_book.reviews = updated_reviews
-        books = books.filter((book) => book.isbn != isbn)
-        books.push(filtered_book)
+        book.reviews[username] = req.body.review;
+        books[isbn] = book;
 
         res.send(`Updated review of book with isbn ${isbn}.`)
         
     } else {
         res.send("No book found!");
     }
+});
 
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const isbn = req.params.isbn;
+    let book = books[isbn];
+
+    if (book) {
+        const username = req.session.authorization['username'];
+
+        let existing_review = book.reviews[username];
+
+        if (existing_review) {
+            delete book.reviews[username]
+        }
+
+        books[isbn] = book;
+
+        res.send(`Deleted review of book with isbn ${isbn}.`)
+        
+    } else {
+        res.send("No book found!");
+    }
 });
 
 module.exports.authenticated = regd_users;
